@@ -18,7 +18,7 @@ client_id = os.getenv('CLIENT_ID')
 client_secret = os.getenv('CLIENT_SECRET')
 
 # AWS CLI settings
-url_expiry = '1800' # URL expiry set - 30 minutes will need to be longer for proper ingest ideally set to 48 hours or more
+url_expiry = '1800' # URL expiry set - 30 minutes. Will need to be longer for propper ingest ideally set to 48 hours or more
 aws_region = 'ap-southeast-2' # AWS region 
 aws_cli_profile = os.getenv('AWS_CLI_PROFILE') # AWS CLI profile ID
 
