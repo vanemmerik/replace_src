@@ -16,6 +16,7 @@ load_dotenv()
 account_id = os.getenv('PUB_ID')
 client_id = os.getenv('CLIENT_ID')
 client_secret = os.getenv('CLIENT_SECRET')
+ingest_profile = os.getenv('INGEST_PROFILE')
 
 # AWS CLI settings
 url_expiry = '1800' # URL expiry set - 30 minutes. Will need to be longer for propper ingest ideally set to 48 hours or more
@@ -153,7 +154,7 @@ def send_to_brightcove(video_id, video_url):
         'Content-Type': 'application/json'
     }, json={
         'master': {'url': video_url},
-        'profile': 'multi-platform-standard-static', # Replace with specified ingest profile if needed
+        'profile': ingest_profile, # Replace with specified ingest profile in the environment variables if needed
         'priority': 'low', # low piority ingest queue
         'capture-images': False # Will not replace the original posters and thumbnails - remove to update poster and thumbnail images
     })
