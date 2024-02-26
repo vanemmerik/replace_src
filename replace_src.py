@@ -153,9 +153,9 @@ def send_to_brightcove(video_id, video_url):
         'Content-Type': 'application/json'
     }, json={
         'master': {'url': video_url},
-        'profile': 'multi-platform-standard-static',  # Replace with specified ingest profile if needed
-        'priority': 'low',
-        'capture-images': False
+        'profile': 'multi-platform-standard-static', # Replace with specified ingest profile if needed
+        'priority': 'low', # low piority ingest queue
+        'capture-images': False # Will not replace the original posters and thumbnails - remove to update poster and thumbnail images
     })
 
     if response.status_code in [200, 202]:
