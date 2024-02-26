@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import csv
 import os
 import requests
@@ -8,15 +9,18 @@ import subprocess
 import re
 from datetime import datetime
 
-# Brightcove API Credentials
-client_id = 'YOUR CLIENT ID HERE'
-client_secret = 'YOUR CLIENT SECRET HERE'
-account_id = 'PUB ID HERE'
+# Load environment variables from .env file
+load_dotenv()
+
+# Brightcove API Credentials stored in .env
+account_id = os.getenv('PUB_ID')
+client_id = os.getenv('CLIENT_ID')
+client_secret = os.getenv('CLIENT_SECRET')
 
 # AWS CLI settings
 url_expiry = '1800' # URL expiry set - 30 minutes 
 aws_region = 'ap-southeast-2' # AWS region 
-aws_cli_profile = 'YOUR AWS CLI PROFILE HERE' # Add your AWS CLI credential profile here
+aws_cli_profile = os.getenv('AWS_CLI_PROFILE') # AWS CLI profile ID
 
 # Regex to check URL prefix and file type for ingestion
 vid_url_pattern = r'^(https?://|s3://)[^/]+/(?:.+/)?[^/]+(?:\.(mp4|mov|avi|mkv))$'
@@ -42,11 +46,20 @@ def is_valid_video_url(video_url):
     else:
         return False, "URL is not a string or is missing"
 
-# CSV and other file paths for logging
+# CSV path based on .env file
+csv_dir = os.getenv('CSV_PATH')
+csv_file = 'video_src.csv'
+csv_path = os.path.join(csv_dir, csv_file)
 
-csv_path = 'ingest.csv' # Define the path to your CSV here for ingest processing
-failure_log_file = f'logs/failed_video_urls_{current_time}.txt'
-last_processed_id_file = 'scratch/last_processed_id.txt'
+# Failure log path based on .env file
+failure_log_dir = os.getenv('LOG_PATH')
+failure_log_file = f'failed_video_urls_{current_time}.txt'
+failure_log_path = os.path.join(failure_log_dir, failure_log_file)
+
+# Last processed id file path based on .env file
+last_processed_id_path = os.getenv('LAST_PROCESSED_PATH')
+last_processed_id_file = 'last_processed_id.txt'
+last_processed_id_path = os.path.join(last_processed_id_path, last_processed_id_file)
 
 # Brightcove OAuth URL
 oauth_url = 'https://oauth.brightcove.com/v4/access_token'
@@ -103,7 +116,7 @@ def video_exists_brightcove(video_id, reader):
     
     if not video_id.isdigit():
         print(f"Video ID: {video_id} - Not valid format.")
-        with open(failure_log_file, 'a') as log:
+        with open(failure_log_path, 'a') as log:
             log.write(f"Row: {reader}, Video ID: {video_id}, Video URL: N/A, Reason: Video ID not a valid format.\n")
         return False
     
@@ -124,7 +137,7 @@ def video_exists_brightcove(video_id, reader):
         return True
     else:
         print(f"Video ID: {video_id} - {json_response[0]['error_code']} - {json_response[0]['message']}")
-        with open(failure_log_file, 'a') as log:
+        with open(failure_log_path, 'a') as log:
             log.write(f"Row: {reader}, Video ID: {video_id}, Video URL: N/A, Reason: CMS API response message - {json_response[0]['error_code']} - {json_response[0]['message']}\n")
         return False
 
@@ -150,18 +163,18 @@ def send_to_brightcove(video_id, video_url):
     else:
         json_response = json.loads(response.text)
         print(f"Failed to ingest video ID {video_id}: {json_response[0]['error_code']}.")
-        with open(failure_log_file, 'a') as log:
+        with open(failure_log_path, 'a') as log:
             log.write(f"Video ID: {video_id}, Video URL: {video_url}, Reason: API response message - {json_response[0]['error_code']}\n")
 
 # Function to save the last processed video ID
 def save_last_processed_id(video_id):
-    with open(last_processed_id_file, 'w') as file:
+    with open(last_processed_id_path, 'w') as file:
         file.write(video_id)
 
 # Function to get the last processed video ID
 def get_last_processed_id():
-    if os.path.exists(last_processed_id_file):
-        with open(last_processed_id_file, 'r') as file:
+    if os.path.exists(last_processed_id_path):
+        with open(last_processed_id_path, 'r') as file:
             return file.read().strip()
     return None
 
@@ -186,7 +199,7 @@ def main():
                 if not delivery_type.strip():
                     error_reason = f"Invalid delivery type: undefined"
                 print(f"Skipping video_id: {video_id} due to - {error_reason}.")
-                with open(failure_log_file, 'a') as log:
+                with open(failure_log_path, 'a') as log:
                     log.write(f"Row: {reader.line_num}, Video ID: {video_id}, Video URL: {video_url}, Reason: {error_reason}\n")
                 continue    
             
@@ -206,15 +219,15 @@ def main():
             # After successfully processing a video ID:
             save_last_processed_id(video_id)
 
-    if os.path.exists(last_processed_id_file):
-        with open(last_processed_id_file, 'r') as file:
+    if os.path.exists(last_processed_id_path):
+        with open(last_processed_id_path, 'r') as file:
             contents = file.read()
             if contents:
-                with open(last_processed_id_file, 'w'):
+                with open(last_processed_id_path, 'w'):
                     pass
-                print(f"Removing last recorded video_id {last_processed_id_file} -- processing is complete.")
+                print(f"Removing last recorded video_id {last_processed_id_path} -- processing is complete.")
             else:
-                print(f"{last_processed_id_file} is already empty.")
+                print(f"{last_processed_id_path} is already empty.")
         print("CSV processing has finished.")
 
 if __name__ == '__main__':
